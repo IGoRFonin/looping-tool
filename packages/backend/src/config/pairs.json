@@ -9,7 +9,7 @@
     "protocol": "morpho",
     "collateral": "sUSDS",
     "borrow": "AUSD",
-    "marketId": "TODO_LOOKUP_FROM_MORPHO_API"
+    "marketId": "0x09cf702bb8b6fe8c6effb6021744e365f598b89bc28f3ea7cd6c55115af825df"
   },
   {
     "protocol": "aave",
