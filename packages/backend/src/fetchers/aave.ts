@@ -94,21 +94,31 @@ interface AaveReserve {
   availableLiquidity: bigint;
   totalScaledVariableDebt: bigint;
   borrowingEnabled: boolean;
+  // eMode parameters (uint16, basis points)
+  eModeLtv: number;
+  eModeLiquidationThreshold: number;
 }
 
 /**
  * Transform Aave reserve pair into our Market type.
- * - LTV and liquidationThreshold come from the collateral reserve, in basis points (÷ 10000).
+ * Uses eMode LTV/threshold when available and higher than base params.
+ * - LTV and liquidationThreshold in basis points (÷ 10000).
  * - Rates are in RAY (÷ 1e27).
  * - availableLiquidity is in the borrow asset's native decimals.
  */
 export function transformAaveReserve(
-  collateralReserve: Pick<AaveReserve, "symbol" | "underlyingAsset" | "baseLTVasCollateral" | "reserveLiquidationThreshold">,
+  collateralReserve: Pick<AaveReserve, "symbol" | "underlyingAsset" | "baseLTVasCollateral" | "reserveLiquidationThreshold" | "eModeLtv" | "eModeLiquidationThreshold">,
   borrowReserve: AaveReserve,
   collateralAPY: number | null
 ): Market {
-  const maxLTV = Number(collateralReserve.baseLTVasCollateral) / 10000;
-  const liqThreshold = Number(collateralReserve.reserveLiquidationThreshold) / 10000;
+  // Prefer eMode params when they provide higher LTV (eMode enables looping for assets like sUSDe)
+  const baseLTV = Number(collateralReserve.baseLTVasCollateral);
+  const eLTV = Number(collateralReserve.eModeLtv);
+  const baseLiq = Number(collateralReserve.reserveLiquidationThreshold);
+  const eLiq = Number(collateralReserve.eModeLiquidationThreshold);
+
+  const maxLTV = Math.max(baseLTV, eLTV) / 10000;
+  const liqThreshold = Math.max(baseLiq, eLiq) / 10000;
   // Divide by RAY using BigInt to avoid JS float overflow, then convert to number.
   // variableBorrowRate is in RAY (1e27), already annualized.
   const borrowAPY = Number((borrowReserve.variableBorrowRate * 10000n) / RAY_BI) / 10000;
@@ -188,10 +198,11 @@ export async function fetchAaveMarkets(
     const borrowReserves = [...reserveMap.entries()]
       .filter(([symbol, r]) => BORROW_STABLECOINS.has(symbol) && r.borrowingEnabled);
 
-    // Generate all valid pairs (skip collateral with LTV=0 — can't loop)
+    // Generate all valid pairs (skip collateral with effective LTV < 50%)
     const markets: Market[] = [];
     for (const colReserve of collateralReserves) {
-      if (colReserve.baseLTVasCollateral < 5000n) continue; // < 50% LTV — no viable looping
+      const effectiveLTV = Math.max(Number(colReserve.baseLTVasCollateral), Number(colReserve.eModeLtv));
+      if (effectiveLTV < 5000) continue; // < 50% LTV — no viable looping
       const collateralAPY = yieldRates.get(colReserve.underlyingAsset.toLowerCase()) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
