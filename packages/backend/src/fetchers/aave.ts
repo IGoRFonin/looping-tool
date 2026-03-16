@@ -194,9 +194,10 @@ export async function fetchAaveMarkets(
     const borrowReserves = [...reserveMap.entries()]
       .filter(([symbol, r]) => BORROW_STABLECOINS.has(symbol) && r.borrowingEnabled);
 
-    // Generate all valid pairs
+    // Generate all valid pairs (skip collateral with LTV=0 — can't loop)
     const markets: Market[] = [];
     for (const [colSymbol, colReserve] of collateralReserves) {
+      if (colReserve.baseLTVasCollateral === 0n) continue;
       const collateralAPY = yieldRates.get(colSymbol) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
