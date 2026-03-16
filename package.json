@@ -1,0 +1,9 @@
+{
+  "name": "looping-tool",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/backend",
+    "packages/frontend"
+  ]
+}
