@@ -84,7 +84,8 @@ export function transformMorphoMarket(
  * collateral is a yield-bearing vault present in yieldVaults.
  */
 export async function fetchMorphoMarkets(
-  yieldVaults: Map<string, number>
+  vaultAddresses: Set<string>,
+  yieldRates: Map<string, number>
 ): Promise<{ markets: Market[]; error?: string }> {
   try {
     const client = new GraphQLClient(MORPHO_API, { fetch: getProxyFetch() });
@@ -94,11 +95,11 @@ export async function fetchMorphoMarkets(
 
     const markets = data.markets.items
       .filter((item) => item.collateralAsset && item.loanAsset)
-      .filter((item) => yieldVaults.has(item.collateralAsset.address.toLowerCase()))
+      .filter((item) => vaultAddresses.has(item.collateralAsset.address.toLowerCase()))
       .filter((item) => BORROW_STABLECOINS.has(item.loanAsset.symbol))
       .filter((item) => item.state.liquidityAssetsUsd >= 1_000_000)
       .map((item) => {
-        const collateralAPY = yieldVaults.get(item.collateralAsset.address.toLowerCase()) ?? null;
+        const collateralAPY = yieldRates.get(item.collateralAsset.address.toLowerCase()) ?? null;
         return transformMorphoMarket(item, collateralAPY);
       });
 

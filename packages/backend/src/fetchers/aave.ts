@@ -157,7 +157,8 @@ export function transformAaveReserve(
  * and borrow is a stablecoin with borrowing enabled.
  */
 export async function fetchAaveMarkets(
-  yieldVaults: Map<string, number>,
+  vaultAddresses: Set<string>,
+  yieldRates: Map<string, number>,
   rpcUrl: string
 ): Promise<{ markets: Market[]; error?: string }> {
   try {
@@ -181,7 +182,7 @@ export async function fetchAaveMarkets(
 
     // Find all collateral reserves whose underlying address is a known yield vault
     const collateralReserves = [...reserveMap.values()]
-      .filter((r) => yieldVaults.has(r.underlyingAsset.toLowerCase()));
+      .filter((r) => vaultAddresses.has(r.underlyingAsset.toLowerCase()));
 
     // Find all borrow reserves that are active stablecoins with borrowing enabled
     const borrowReserves = [...reserveMap.entries()]
@@ -191,7 +192,7 @@ export async function fetchAaveMarkets(
     const markets: Market[] = [];
     for (const colReserve of collateralReserves) {
       if (colReserve.baseLTVasCollateral === 0n) continue;
-      const collateralAPY = yieldVaults.get(colReserve.underlyingAsset.toLowerCase()) ?? null;
+      const collateralAPY = yieldRates.get(colReserve.underlyingAsset.toLowerCase()) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
         const market = transformAaveReserve(colReserve, borReserve, collateralAPY);
