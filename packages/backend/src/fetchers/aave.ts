@@ -191,7 +191,7 @@ export async function fetchAaveMarkets(
     // Generate all valid pairs (skip collateral with LTV=0 — can't loop)
     const markets: Market[] = [];
     for (const colReserve of collateralReserves) {
-      if (colReserve.baseLTVasCollateral === 0n) continue;
+      if (colReserve.baseLTVasCollateral < 5000n) continue; // < 50% LTV — no viable looping
       const collateralAPY = yieldRates.get(colReserve.underlyingAsset.toLowerCase()) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
