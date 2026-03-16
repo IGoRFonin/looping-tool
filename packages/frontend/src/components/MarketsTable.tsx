@@ -51,54 +51,54 @@ const columns = [
   }),
   columnHelper.accessor("collateralAPY", {
     header: "Collateral APY",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("borrowAPY", {
     header: "Borrow APY",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("availableLiquidity", {
     header: "Avail. Liquidity",
-    cell: (info) => usd(info.getValue()),
+    cell: (info) => <span className="font-mono">{usd(info.getValue())}</span>,
   }),
   columnHelper.accessor("utilization", {
     header: "Utilization",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("maxLTV", {
     header: "Max LTV",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("liqThreshold", {
     header: "Liq. Threshold",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("liqBuffer", {
     header: "Liq. Buffer",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("leverage", {
     header: "Leverage",
-    cell: (info) => `${info.getValue().toFixed(2)}x`,
+    cell: (info) => <span className="font-mono">{info.getValue().toFixed(2)}x</span>,
   }),
   columnHelper.accessor("netAPY", {
     header: "Net APY",
     cell: (info) => {
       const v = info.getValue();
-      if (v === null) return "N/A";
-      const cls = v > 0 ? "text-green-600 font-semibold" : "text-red-500";
-      return <span className={cls}>{pct(v)}</span>;
+      if (v === null) return <span className="font-mono">N/A</span>;
+      const cls = v > 0 ? "text-positive font-semibold" : "text-negative";
+      return <span className={`font-mono ${cls}`}>{pct(v)}</span>;
     },
   }),
   columnHelper.accessor("entryCost", {
     header: "Entry Cost",
-    cell: (info) => pct(info.getValue()),
+    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
   }),
   columnHelper.accessor("breakEvenDays", {
     header: "Break-Even",
     cell: (info) => {
       const v = info.getValue();
-      return v === null ? "N/A" : `${v.toFixed(1)} days`;
+      return <span className="font-mono">{v === null ? "N/A" : `${v.toFixed(1)} days`}</span>;
     },
   }),
 ];
@@ -132,38 +132,48 @@ export function MarketsTable({ markets, filters }: MarketsTableProps) {
   });
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-sm border-collapse">
-        <thead>
-          {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id} className="border-b bg-gray-50">
-              {hg.headers.map((h) => (
-                <th
-                  key={h.id}
-                  onClick={h.column.getToggleSortingHandler()}
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer select-none whitespace-nowrap"
-                >
-                  {flexRender(h.column.columnDef.header, h.getContext())}
-                  {{ asc: " ↑", desc: " ↓" }[h.column.getIsSorted() as string] ?? ""}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b hover:bg-gray-50">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-2 whitespace-nowrap">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="bg-surface border border-border rounded-xl shadow-lg shadow-black/5 overflow-hidden transition-colors duration-300">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="bg-table-header border-b border-border">
+                {hg.headers.map((h) => (
+                  <th
+                    key={h.id}
+                    onClick={h.column.getToggleSortingHandler()}
+                    className="px-3 py-2 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors duration-200"
+                  >
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    {{ asc: " \u2191", desc: " \u2193" }[h.column.getIsSorted() as string] ?? ""}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row, i) => (
+              <tr
+                key={row.id}
+                className={`border-b border-border/50 hover:bg-row-hover transition-colors duration-150 ${
+                  i % 2 === 1 ? "bg-row-alt" : ""
+                }`}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className="px-3 py-2 whitespace-nowrap text-text-primary"
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {markets.length === 0 && (
-        <p className="text-center text-gray-400 py-8">
+        <p className="text-center text-text-secondary py-12">
           No markets loaded. Click Refresh to fetch data.
         </p>
       )}

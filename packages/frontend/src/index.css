@@ -1,1 +1,87 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-bg: var(--theme-bg);
+  --color-surface: var(--theme-surface);
+  --color-surface-alt: var(--theme-surface-alt);
+  --color-text-primary: var(--theme-text-primary);
+  --color-text-secondary: var(--theme-text-secondary);
+  --color-accent: var(--theme-accent);
+  --color-accent-secondary: var(--theme-accent-secondary);
+  --color-border: var(--theme-border);
+  --color-input-bg: var(--theme-input-bg);
+  --color-input-border: var(--theme-input-border);
+  --color-table-header: var(--theme-table-header);
+  --color-row-hover: var(--theme-row-hover);
+  --color-row-alt: var(--theme-row-alt);
+  --color-positive: var(--theme-positive);
+  --color-negative: var(--theme-negative);
+  --color-warning-bg: var(--theme-warning-bg);
+  --color-warning-border: var(--theme-warning-border);
+  --color-warning-text: var(--theme-warning-text);
+}
+
+/* Dark theme (default) */
+:root.dark {
+  --theme-bg: #0f1117;
+  --theme-surface: #1a1d2e;
+  --theme-surface-alt: #151825;
+  --theme-text-primary: #e2e8f0;
+  --theme-text-secondary: #94a3b8;
+  --theme-accent: #3b82f6;
+  --theme-accent-secondary: #8b5cf6;
+  --theme-border: rgba(51, 65, 85, 0.5);
+  --theme-input-bg: #1a1d2e;
+  --theme-input-border: #334155;
+  --theme-table-header: #151825;
+  --theme-row-hover: #1e2235;
+  --theme-row-alt: #151825;
+  --theme-positive: #22c55e;
+  --theme-negative: #ef4444;
+  --theme-warning-bg: rgba(234, 179, 8, 0.1);
+  --theme-warning-border: rgba(234, 179, 8, 0.3);
+  --theme-warning-text: #fbbf24;
+}
+
+/* Light theme */
+:root.light {
+  --theme-bg: #f8fafc;
+  --theme-surface: #ffffff;
+  --theme-surface-alt: #f1f5f9;
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #64748b;
+  --theme-accent: #2563eb;
+  --theme-accent-secondary: #7c3aed;
+  --theme-border: #e2e8f0;
+  --theme-input-bg: #ffffff;
+  --theme-input-border: #cbd5e1;
+  --theme-table-header: #f1f5f9;
+  --theme-row-hover: #f8fafc;
+  --theme-row-alt: #f8fafc;
+  --theme-positive: #16a34a;
+  --theme-negative: #dc2626;
+  --theme-warning-bg: #fefce8;
+  --theme-warning-border: #fde68a;
+  --theme-warning-text: #92400e;
+}
+
+body {
+  background-color: var(--theme-bg);
+  color: var(--theme-text-primary);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Pulse animation for status dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
