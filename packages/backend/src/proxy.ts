@@ -45,13 +45,24 @@ export function getProxyFetch(): typeof globalThis.fetch {
     const socksAgent = new SocksProxyAgent(proxyUrl);
 
     proxyFetch = ((input: any, init?: any) => {
-      const url = typeof input === "string" ? input : input.url;
-      const method = init?.method || "GET";
+      let url: string;
+      if (typeof input === "string") {
+        url = input;
+      } else if (input instanceof URL) {
+        url = input.toString();
+      } else if (input?.url) {
+        // Request object
+        url = input.url;
+      } else {
+        url = String(input);
+      }
+      const method = init?.method || input?.method || "GET";
       const headers: Record<string, string> = {
         "User-Agent": BROWSER_UA,
+        ...toPlainHeaders(input?.headers),
         ...toPlainHeaders(init?.headers),
       };
-      const body = init?.body;
+      const body = init?.body ?? input?.body;
 
       return new Promise<Response>((resolve, reject) => {
         const parsedUrl = new URL(url);
