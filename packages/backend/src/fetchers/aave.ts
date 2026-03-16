@@ -197,7 +197,9 @@ export async function fetchAaveMarkets(
       const collateralAPY = yieldRates.get(colSymbol) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
-        markets.push(transformAaveReserve(colReserve, borReserve, collateralAPY));
+        const market = transformAaveReserve(colReserve, borReserve, collateralAPY);
+        if (market.availableLiquidity < 1_000_000) continue;
+        markets.push(market);
       }
     }
 

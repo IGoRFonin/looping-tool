@@ -108,7 +108,7 @@ export async function fetchMorphoMarkets(
 
     const markets = data.markets.items
       .filter((item) => BORROW_STABLECOINS.has(item.loanAsset.symbol))
-      .filter((item) => item.state.liquidityAssetsUsd > 10_000)
+      .filter((item) => item.state.liquidityAssetsUsd >= 1_000_000)
       .map((item) => {
         const collateralAPY = yieldRates.get(item.collateralAsset.symbol) ?? null;
         return transformMorphoMarket(item, collateralAPY);
