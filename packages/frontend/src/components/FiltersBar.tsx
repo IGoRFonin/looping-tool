@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { type FilterParams } from "@looping-tool/shared";
 
 interface FiltersBarProps {
@@ -6,6 +7,43 @@ interface FiltersBarProps {
   onRefresh: () => void;
   lastUpdated: string;
   loading: boolean;
+}
+
+/** A number input that lets you type freely and only commits on blur. */
+function PctInput({
+  value,
+  placeholder,
+  className,
+  onCommit,
+}: {
+  value: number | null;
+  placeholder?: string;
+  className?: string;
+  onCommit: (v: string) => void;
+}) {
+  const display = value !== null ? String(value * 100) : "";
+  const [text, setText] = useState(display);
+  const [focused, setFocused] = useState(false);
+
+  // Sync from parent when not focused
+  useEffect(() => {
+    if (!focused) setText(display);
+  }, [display, focused]);
+
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={focused ? text : display}
+      onChange={(e) => setText(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+        onCommit(text);
+      }}
+      className={className}
+    />
+  );
 }
 
 export function FiltersBar({
@@ -17,7 +55,7 @@ export function FiltersBar({
 }: FiltersBarProps) {
   const totalFees = filters.priceImpact + filters.flashloanFee + filters.serviceFee;
 
-  const handleChange = (key: keyof FilterParams, displayValue: string) => {
+  const handleCommit = (key: keyof FilterParams, displayValue: string) => {
     const num = parseFloat(displayValue);
     if (key === "targetLTV") {
       onChange({ ...filters, targetLTV: displayValue === "" ? null : num / 100 });
@@ -30,38 +68,34 @@ export function FiltersBar({
     <div className="flex flex-wrap items-end gap-4 p-4 bg-gray-50 rounded-lg mb-4">
       <div>
         <label className="block text-xs text-gray-500 mb-1">TARGET LTV %</label>
-        <input
-          type="text"
+        <PctInput
+          value={filters.targetLTV}
           placeholder="default: max LTV - 5"
-          value={filters.targetLTV !== null ? (filters.targetLTV * 100).toFixed(1) : ""}
-          onChange={(e) => handleChange("targetLTV", e.target.value)}
+          onCommit={(v) => handleCommit("targetLTV", v)}
           className="border rounded px-2 py-1 w-44 text-sm"
         />
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">PRICE IMPACT %</label>
-        <input
-          type="text"
-          value={(filters.priceImpact * 100).toFixed(2)}
-          onChange={(e) => handleChange("priceImpact", e.target.value)}
+        <PctInput
+          value={filters.priceImpact}
+          onCommit={(v) => handleCommit("priceImpact", v)}
           className="border rounded px-2 py-1 w-24 text-sm"
         />
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">FLASHLOAN FEE %</label>
-        <input
-          type="text"
-          value={(filters.flashloanFee * 100).toFixed(2)}
-          onChange={(e) => handleChange("flashloanFee", e.target.value)}
+        <PctInput
+          value={filters.flashloanFee}
+          onCommit={(v) => handleCommit("flashloanFee", v)}
           className="border rounded px-2 py-1 w-24 text-sm"
         />
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">SERVICE FEE %</label>
-        <input
-          type="text"
-          value={(filters.serviceFee * 100).toFixed(2)}
-          onChange={(e) => handleChange("serviceFee", e.target.value)}
+        <PctInput
+          value={filters.serviceFee}
+          onCommit={(v) => handleCommit("serviceFee", v)}
           className="border rounded px-2 py-1 w-24 text-sm"
         />
       </div>
