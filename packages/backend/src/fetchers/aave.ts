@@ -11,9 +11,8 @@ const POOL_ADDRESSES_PROVIDER = "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e" as 
 const RAY = 1e27;
 const RAY_BI = 10n ** 27n;
 
-// Full ABI for getReservesData — matches the deployed UiPoolDataProviderV3 at
-// 0x3F78BBD206e4D3c504Eb854232EdA7e47E9Fd8FC (Aave V3.2 Ethereum mainnet).
-// Field order and types verified from the on-chain contract source (Etherscan).
+// Full ABI for getReservesData — V3.2 deployed at 0x3F78BBD...
+// 41 fields verified from Blockscout (stable borrow fields removed in V3.2).
 const UI_POOL_ABI = [
   {
     name: "getReservesData",
@@ -25,51 +24,45 @@ const UI_POOL_ABI = [
         name: "",
         type: "tuple[]",
         components: [
-          // Core index & rate data
           { name: "underlyingAsset", type: "address" },
-          { name: "liquidityIndex", type: "uint256" },
-          { name: "variableBorrowIndex", type: "uint256" },
-          { name: "liquidityRate", type: "uint256" },      // RAY, annualized supply APY
-          { name: "variableBorrowRate", type: "uint256" }, // RAY, annualized borrow APY
-          { name: "lastUpdateTimestamp", type: "uint256" },
-          // Token addresses
-          { name: "aTokenAddress", type: "address" },
-          { name: "variableDebtTokenAddress", type: "address" },
-          { name: "interestRateStrategyAddress", type: "address" },
-          // Pricing & liquidity
-          { name: "priceInMarketReferenceCurrency", type: "uint256" },
-          { name: "priceOracle", type: "address" },
-          { name: "availableLiquidity", type: "uint256" },
-          { name: "totalScaledVariableDebt", type: "uint256" },
-          // Asset metadata
-          { name: "symbol", type: "string" },
           { name: "name", type: "string" },
-          // Collateral & risk parameters
+          { name: "symbol", type: "string" },
+          { name: "decimals", type: "uint256" },
           { name: "baseLTVasCollateral", type: "uint256" },
           { name: "reserveLiquidationThreshold", type: "uint256" },
           { name: "reserveLiquidationBonus", type: "uint256" },
-          { name: "decimals", type: "uint256" },
           { name: "reserveFactor", type: "uint256" },
-          // Configuration flags
           { name: "usageAsCollateralEnabled", type: "bool" },
+          { name: "borrowingEnabled", type: "bool" },
           { name: "isActive", type: "bool" },
           { name: "isFrozen", type: "bool" },
-          { name: "borrowingEnabled", type: "bool" },
+          { name: "liquidityIndex", type: "uint128" },
+          { name: "variableBorrowIndex", type: "uint128" },
+          { name: "liquidityRate", type: "uint128" },
+          { name: "variableBorrowRate", type: "uint128" },
+          { name: "lastUpdateTimestamp", type: "uint40" },
+          { name: "aTokenAddress", type: "address" },
+          { name: "variableDebtTokenAddress", type: "address" },
+          { name: "interestRateStrategyAddress", type: "address" },
+          { name: "availableLiquidity", type: "uint256" },
+          { name: "totalScaledVariableDebt", type: "uint256" },
+          { name: "priceInMarketReferenceCurrency", type: "uint256" },
+          { name: "priceOracle", type: "address" },
+          { name: "variableRateSlope1", type: "uint256" },
+          { name: "variableRateSlope2", type: "uint256" },
+          { name: "baseVariableBorrowRate", type: "uint256" },
+          { name: "optimalUsageRatio", type: "uint256" },
           { name: "isPaused", type: "bool" },
-          // Caps
+          { name: "isSiloedBorrowing", type: "bool" },
+          { name: "accruedToTreasury", type: "uint128" },
+          { name: "unbacked", type: "uint128" },
+          { name: "isolationModeTotalDebt", type: "uint128" },
+          { name: "flashLoanEnabled", type: "bool" },
           { name: "debtCeiling", type: "uint256" },
           { name: "debtCeilingDecimals", type: "uint256" },
           { name: "borrowCap", type: "uint256" },
           { name: "supplyCap", type: "uint256" },
-          // V3 feature flags
-          { name: "flashLoanEnabled", type: "bool" },
-          { name: "isSiloedBorrowing", type: "bool" },
-          // Isolation & unbacked
-          { name: "unbacked", type: "uint128" },
-          { name: "isolationModeTotalDebt", type: "uint128" },
-          { name: "accruedToTreasury", type: "uint128" },
           { name: "borrowableInIsolation", type: "bool" },
-          // V3.2 virtual balance
           { name: "virtualAccActive", type: "bool" },
           { name: "virtualUnderlyingBalance", type: "uint128" },
         ],
@@ -78,10 +71,10 @@ const UI_POOL_ABI = [
         name: "",
         type: "tuple",
         components: [
-          { name: "networkBaseTokenPriceInUsd", type: "int256" },
-          { name: "networkBaseTokenPriceDecimals", type: "uint256" },
           { name: "marketReferenceCurrencyUnit", type: "uint256" },
           { name: "marketReferenceCurrencyPriceInUsd", type: "int256" },
+          { name: "networkBaseTokenPriceInUsd", type: "int256" },
+          { name: "networkBaseTokenPriceDecimals", type: "uint8" },
         ],
       },
     ],
@@ -91,11 +84,11 @@ const UI_POOL_ABI = [
 interface AaveReserve {
   underlyingAsset: string;
   symbol: string;
-  decimals: bigint;           // uint8 on-chain, decoded as bigint by viem
+  decimals: bigint;
   baseLTVasCollateral: bigint;
   reserveLiquidationThreshold: bigint;
-  variableBorrowRate: bigint; // uint256, in RAY (1e27) — already annualized
-  liquidityRate: bigint;      // uint256, in RAY (1e27) — already annualized
+  variableBorrowRate: bigint; // uint128, in RAY (1e27) — already annualized
+  liquidityRate: bigint;
   availableLiquidity: bigint;
   totalScaledVariableDebt: bigint;
 }
