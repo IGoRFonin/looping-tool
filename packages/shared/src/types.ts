@@ -59,14 +59,6 @@ export interface ComputedMetrics {
   liqBuffer: number;
 }
 
-/** Pair configuration entry for pairs.json */
-export interface PairConfig {
-  protocol: "morpho" | "aave";
-  collateral: string;
-  borrow: string;
-  marketId?: string;
-}
-
 /** Vault configuration entry for vaults.json */
 export interface VaultConfig {
   [symbol: string]: {

@@ -1,7 +1,16 @@
 import { createPublicClient, http, type PublicClient } from "viem";
 import { mainnet } from "viem/chains";
-import type { Market, PairConfig } from "@looping-tool/shared";
+import type { Market } from "@looping-tool/shared";
 import { getProxyFetch } from "../proxy.js";
+import vaultsConfig from "../config/vaults.json" with { type: "json" };
+
+const collateralSymbols = new Set(Object.keys(vaultsConfig));
+
+/** Stablecoins we consider as valid borrow assets for looping */
+const BORROW_STABLECOINS = new Set([
+  "USDT", "USDC", "DAI", "USDS", "PYUSD", "USDe", "AUSD", "USDtb",
+  "FRAX", "crvUSD", "GHO", "LUSD", "sDAI",
+]);
 
 // Aave V3 Ethereum UiPoolDataProviderV3
 const UI_POOL_DATA_PROVIDER = "0x3F78BBD206e4D3c504Eb854232EdA7e47E9Fd8FC" as const;
@@ -91,6 +100,7 @@ interface AaveReserve {
   liquidityRate: bigint;
   availableLiquidity: bigint;
   totalScaledVariableDebt: bigint;
+  borrowingEnabled: boolean;
 }
 
 /**
@@ -149,17 +159,14 @@ export function transformAaveReserve(
 }
 
 /**
- * Fetch all Aave V3 reserves from UiPoolDataProviderV3 and filter
- * to only the pairs specified in config.
+ * Fetch all Aave V3 reserves and auto-discover valid looping pairs.
+ * A pair is valid when collateral is a yield-bearing token (from vaults.json)
+ * and borrow is a stablecoin with borrowing enabled.
  */
 export async function fetchAaveMarkets(
-  pairs: PairConfig[],
   yieldRates: Map<string, number | null>,
   rpcUrl: string
 ): Promise<{ markets: Market[]; error?: string }> {
-  const aavePairs = pairs.filter((p) => p.protocol === "aave");
-  if (aavePairs.length === 0) return { markets: [] };
-
   try {
     const client = createPublicClient({
       chain: mainnet,
@@ -179,14 +186,22 @@ export async function fetchAaveMarkets(
       reserveMap.set(r.symbol, r as unknown as AaveReserve);
     }
 
-    const markets: Market[] = [];
-    for (const pair of aavePairs) {
-      const collateralReserve = reserveMap.get(pair.collateral);
-      const borrowReserve = reserveMap.get(pair.borrow);
-      if (!collateralReserve || !borrowReserve) continue;
+    // Find all collateral reserves that are yield-bearing tokens
+    const collateralReserves = [...reserveMap.entries()]
+      .filter(([symbol]) => collateralSymbols.has(symbol));
 
-      const collateralAPY = yieldRates.get(pair.collateral) ?? null;
-      markets.push(transformAaveReserve(collateralReserve, borrowReserve, collateralAPY));
+    // Find all borrow reserves that are active stablecoins with borrowing enabled
+    const borrowReserves = [...reserveMap.entries()]
+      .filter(([symbol, r]) => BORROW_STABLECOINS.has(symbol) && r.borrowingEnabled);
+
+    // Generate all valid pairs
+    const markets: Market[] = [];
+    for (const [colSymbol, colReserve] of collateralReserves) {
+      const collateralAPY = yieldRates.get(colSymbol) ?? null;
+      for (const [, borReserve] of borrowReserves) {
+        if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
+        markets.push(transformAaveReserve(colReserve, borReserve, collateralAPY));
+      }
     }
 
     return { markets };

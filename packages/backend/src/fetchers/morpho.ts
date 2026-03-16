@@ -1,12 +1,28 @@
 import { gql, GraphQLClient } from "graphql-request";
-import type { Market, PairConfig } from "@looping-tool/shared";
+import type { Market } from "@looping-tool/shared";
 import { getProxyFetch } from "../proxy.js";
+import vaultsConfig from "../config/vaults.json" with { type: "json" };
 
 const MORPHO_API = "https://api.morpho.org/graphql";
 
+const collateralSymbols = Object.keys(vaultsConfig);
+const collateralAddresses = Object.values(vaultsConfig).map((v) => v.address);
+
+/**
+ * Query all Morpho markets where collateral is one of our yield-bearing tokens.
+ * No hardcoded marketIds — discovers markets automatically.
+ */
 const MARKETS_QUERY = gql`
-  query GetMarkets($marketIds: [String!]!) {
-    markets(where: { uniqueKey_in: $marketIds, chainId_in: [1] }) {
+  query GetMarkets($collateralAddresses: [String!]!) {
+    markets(
+      where: {
+        collateralAssetAddress_in: $collateralAddresses
+        chainId_in: [1]
+      }
+      first: 100
+      orderBy: SupplyAssetsUsd
+      orderDirection: Desc
+    ) {
       items {
         uniqueKey
         lltv
@@ -75,28 +91,26 @@ export function transformMorphoMarket(
 }
 
 /**
- * Fetch markets from Morpho GraphQL API for the given pair configs.
- * Returns markets array + any errors encountered.
+ * Fetch all Morpho markets where collateral is a yield-bearing token.
+ * Auto-discovers markets — no hardcoded pairs needed.
  */
 export async function fetchMorphoMarkets(
-  pairs: PairConfig[],
   yieldRates: Map<string, number | null>
 ): Promise<{ markets: Market[]; error?: string }> {
-  const morphoPairs = pairs.filter((p) => p.protocol === "morpho" && p.marketId);
-  if (morphoPairs.length === 0) return { markets: [] };
-
-  const marketIds = morphoPairs.map((p) => p.marketId!);
+  if (collateralAddresses.length === 0) return { markets: [] };
 
   try {
     const client = new GraphQLClient(MORPHO_API, { fetch: getProxyFetch() });
     const data = await client.request<{
       markets: { items: MorphoApiMarket[] };
-    }>(MARKETS_QUERY, { marketIds });
+    }>(MARKETS_QUERY, { collateralAddresses });
 
-    const markets = data.markets.items.map((item) => {
-      const collateralAPY = yieldRates.get(item.collateralAsset.symbol) ?? null;
-      return transformMorphoMarket(item, collateralAPY);
-    });
+    const markets = data.markets.items
+      .filter((item) => item.state.liquidityAssetsUsd > 10_000) // skip dust markets
+      .map((item) => {
+        const collateralAPY = yieldRates.get(item.collateralAsset.symbol) ?? null;
+        return transformMorphoMarket(item, collateralAPY);
+      });
 
     return { markets };
   } catch (err) {
