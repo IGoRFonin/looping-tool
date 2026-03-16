@@ -2,6 +2,7 @@ import { gql, GraphQLClient } from "graphql-request";
 import type { Market } from "@looping-tool/shared";
 import { getProxyFetch } from "../proxy.js";
 import vaultsConfig from "../config/vaults.json" with { type: "json" };
+import { BORROW_STABLECOINS } from "../config/stablecoins.js";
 
 const MORPHO_API = "https://api.morpho.org/graphql";
 
@@ -106,7 +107,8 @@ export async function fetchMorphoMarkets(
     }>(MARKETS_QUERY, { collateralAddresses });
 
     const markets = data.markets.items
-      .filter((item) => item.state.liquidityAssetsUsd > 10_000) // skip dust markets
+      .filter((item) => BORROW_STABLECOINS.has(item.loanAsset.symbol))
+      .filter((item) => item.state.liquidityAssetsUsd > 10_000)
       .map((item) => {
         const collateralAPY = yieldRates.get(item.collateralAsset.symbol) ?? null;
         return transformMorphoMarket(item, collateralAPY);

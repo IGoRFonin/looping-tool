@@ -4,13 +4,9 @@ import type { Market } from "@looping-tool/shared";
 import { getProxyFetch } from "../proxy.js";
 import vaultsConfig from "../config/vaults.json" with { type: "json" };
 
-const collateralSymbols = new Set(Object.keys(vaultsConfig));
+import { BORROW_STABLECOINS } from "../config/stablecoins.js";
 
-/** Stablecoins we consider as valid borrow assets for looping */
-const BORROW_STABLECOINS = new Set([
-  "USDT", "USDC", "DAI", "USDS", "PYUSD", "USDe", "AUSD", "USDtb",
-  "FRAX", "crvUSD", "GHO", "LUSD", "sDAI",
-]);
+const collateralSymbols = new Set(Object.keys(vaultsConfig));
 
 // Aave V3 Ethereum UiPoolDataProviderV3
 const UI_POOL_DATA_PROVIDER = "0x3F78BBD206e4D3c504Eb854232EdA7e47E9Fd8FC" as const;
