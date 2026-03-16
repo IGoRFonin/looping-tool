@@ -58,11 +58,3 @@ export interface ComputedMetrics {
   breakEvenDays: number | null;
   liqBuffer: number;
 }
-
-/** Vault configuration entry for vaults.json */
-export interface VaultConfig {
-  [symbol: string]: {
-    address: string;
-    standard: "ERC-4626";
-  };
-}

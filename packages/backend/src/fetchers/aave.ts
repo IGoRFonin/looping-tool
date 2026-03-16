@@ -2,11 +2,8 @@ import { createPublicClient, http, type PublicClient } from "viem";
 import { mainnet } from "viem/chains";
 import type { Market } from "@looping-tool/shared";
 import { getProxyFetch } from "../proxy.js";
-import vaultsConfig from "../config/vaults.json" with { type: "json" };
 
 import { BORROW_STABLECOINS } from "../config/stablecoins.js";
-
-const collateralSymbols = new Set(Object.keys(vaultsConfig));
 
 // Aave V3 Ethereum UiPoolDataProviderV3
 const UI_POOL_DATA_PROVIDER = "0x3F78BBD206e4D3c504Eb854232EdA7e47E9Fd8FC" as const;
@@ -156,11 +153,11 @@ export function transformAaveReserve(
 
 /**
  * Fetch all Aave V3 reserves and auto-discover valid looping pairs.
- * A pair is valid when collateral is a yield-bearing token (from vaults.json)
+ * A pair is valid when collateral underlying address is in yieldVaults
  * and borrow is a stablecoin with borrowing enabled.
  */
 export async function fetchAaveMarkets(
-  yieldRates: Map<string, number | null>,
+  yieldVaults: Map<string, number>,
   rpcUrl: string
 ): Promise<{ markets: Market[]; error?: string }> {
   try {
@@ -182,9 +179,9 @@ export async function fetchAaveMarkets(
       reserveMap.set(r.symbol, r as unknown as AaveReserve);
     }
 
-    // Find all collateral reserves that are yield-bearing tokens
-    const collateralReserves = [...reserveMap.entries()]
-      .filter(([symbol]) => collateralSymbols.has(symbol));
+    // Find all collateral reserves whose underlying address is a known yield vault
+    const collateralReserves = [...reserveMap.values()]
+      .filter((r) => yieldVaults.has(r.underlyingAsset.toLowerCase()));
 
     // Find all borrow reserves that are active stablecoins with borrowing enabled
     const borrowReserves = [...reserveMap.entries()]
@@ -192,9 +189,9 @@ export async function fetchAaveMarkets(
 
     // Generate all valid pairs (skip collateral with LTV=0 — can't loop)
     const markets: Market[] = [];
-    for (const [colSymbol, colReserve] of collateralReserves) {
+    for (const colReserve of collateralReserves) {
       if (colReserve.baseLTVasCollateral === 0n) continue;
-      const collateralAPY = yieldRates.get(colSymbol) ?? null;
+      const collateralAPY = yieldVaults.get(colReserve.underlyingAsset.toLowerCase()) ?? null;
       for (const [, borReserve] of borrowReserves) {
         if (colReserve.underlyingAsset === borReserve.underlyingAsset) continue;
         const market = transformAaveReserve(colReserve, borReserve, collateralAPY);

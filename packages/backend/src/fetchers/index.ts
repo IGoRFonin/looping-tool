@@ -1,7 +1,7 @@
 import type { Market } from "@looping-tool/shared";
 import { fetchMorphoMarkets } from "./morpho.js";
 import { fetchAaveMarkets } from "./aave.js";
-import { fetchYieldRates } from "./yield.js";
+import { fetchDefiLlamaYields } from "./defillama.js";
 
 export async function fetchAllMarkets(): Promise<{
   markets: Market[];
@@ -12,13 +12,13 @@ export async function fetchAllMarkets(): Promise<{
     return { markets: [], errors: ["RPC_URL not configured"] };
   }
 
-  // Step 1: Fetch yield rates for all vaults
-  const yieldRates = await fetchYieldRates(rpcUrl);
+  // Step 1: Fetch yield vaults from DeFiLlama (address → APY as decimal)
+  const yieldVaults = await fetchDefiLlamaYields();
 
   // Step 2: Fetch from both protocols in parallel (auto-discover pairs)
   const [morphoResult, aaveResult] = await Promise.all([
-    fetchMorphoMarkets(yieldRates),
-    fetchAaveMarkets(yieldRates, rpcUrl),
+    fetchMorphoMarkets(yieldVaults),
+    fetchAaveMarkets(yieldVaults, rpcUrl),
   ]);
 
   const markets = [...morphoResult.markets, ...aaveResult.markets];
