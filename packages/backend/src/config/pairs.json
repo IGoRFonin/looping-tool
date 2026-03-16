@@ -1,0 +1,24 @@
+[
+  {
+    "protocol": "morpho",
+    "collateral": "sUSDS",
+    "borrow": "USDT",
+    "marketId": "0x3274643db77a064abd3bc851de77556a4ad2e2f502f4f0c80845fa8f909ecf0b"
+  },
+  {
+    "protocol": "morpho",
+    "collateral": "sUSDS",
+    "borrow": "AUSD",
+    "marketId": "TODO_LOOKUP_FROM_MORPHO_API"
+  },
+  {
+    "protocol": "aave",
+    "collateral": "sUSDe",
+    "borrow": "USDT"
+  },
+  {
+    "protocol": "aave",
+    "collateral": "sUSDe",
+    "borrow": "USDC"
+  }
+]
