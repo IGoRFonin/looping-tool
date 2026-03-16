@@ -87,8 +87,13 @@ export function transformAaveReserve(
   const decimals = Number(borrowReserve.decimals);
   const availLiqTokens = Number(borrowReserve.availableLiquidity) / 10 ** decimals;
 
+  // NOTE: availableLiquidity is in token units, not USD.
+  // For current stablecoin-only scope this is ~equivalent to USD.
+  // To support non-dollar assets, multiply by priceInMarketReferenceCurrency.
   const availableLiquidity = availLiqTokens;
 
+  // NOTE: totalScaledVariableDebt is pre-index, so utilization is approximate.
+  // For accurate utilization, multiply by variableBorrowIndex / RAY.
   const scaledDebt = Number(borrowReserve.totalScaledVariableDebt ?? 0n) / 10 ** decimals;
   const utilization = scaledDebt + availLiqTokens > 0
     ? scaledDebt / (scaledDebt + availLiqTokens)

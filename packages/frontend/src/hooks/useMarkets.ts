@@ -21,7 +21,7 @@ export function useMarkets() {
       console.error("Failed to fetch markets:", err);
       setData((prev) => ({
         ...prev,
-        errors: [...prev.errors, "fetch_failed"],
+        errors: ["fetch_failed"],
       }));
     } finally {
       setLoading(false);
