@@ -10,5 +10,9 @@
   "syrupUSDT": {
     "address": "0x356B8d89c1e1239Cbbb9dE4815c39A1474d5BA7D",
     "standard": "ERC-4626"
+  },
+  "syrupUSDC": {
+    "address": "0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b",
+    "standard": "ERC-4626"
   }
 }
