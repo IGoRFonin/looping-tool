@@ -93,6 +93,7 @@ export async function fetchMorphoMarkets(
     }>(MARKETS_QUERY);
 
     const markets = data.markets.items
+      .filter((item) => item.collateralAsset && item.loanAsset)
       .filter((item) => yieldVaults.has(item.collateralAsset.address.toLowerCase()))
       .filter((item) => BORROW_STABLECOINS.has(item.loanAsset.symbol))
       .filter((item) => item.state.liquidityAssetsUsd >= 1_000_000)
