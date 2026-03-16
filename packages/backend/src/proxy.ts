@@ -5,6 +5,26 @@ import https from "node:https";
 
 const proxyUrl = process.env.PROXY_URL;
 
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+/** Convert Headers/object/array to plain Record */
+function toPlainHeaders(h: any): Record<string, string> {
+  if (!h) return {};
+  if (typeof h.entries === "function") {
+    // Headers object
+    const out: Record<string, string> = {};
+    for (const [k, v] of h.entries()) out[k] = v;
+    return out;
+  }
+  if (Array.isArray(h)) {
+    const out: Record<string, string> = {};
+    for (const [k, v] of h) out[k] = v;
+    return out;
+  }
+  return { ...h };
+}
+
 let proxyFetch: typeof globalThis.fetch | undefined;
 
 /**
@@ -16,17 +36,14 @@ export function getProxyFetch(): typeof globalThis.fetch {
 
   if (!proxyFetch) {
     if (proxyUrl.startsWith("socks")) {
-      // SOCKS5 proxy — use socks-proxy-agent with native fetch via undici
       const socksAgent = new SocksProxyAgent(proxyUrl);
 
-      // node's native fetch (undici) doesn't support Node.js http.Agent,
-      // so we use a custom fetch based on node:https for SOCKS5
       proxyFetch = ((input: any, init?: any) => {
         const url = typeof input === "string" ? input : input.url;
         const method = init?.method || "GET";
-        const headers = {
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          ...(init?.headers || {}),
+        const headers: Record<string, string> = {
+          "User-Agent": BROWSER_UA,
+          ...toPlainHeaders(init?.headers),
         };
         const body = init?.body;
 
@@ -36,22 +53,19 @@ export function getProxyFetch(): typeof globalThis.fetch {
 
           const req = mod.request(
             url,
-            {
-              method,
-              headers: headers as Record<string, string>,
-              agent: socksAgent,
-            },
+            { method, headers, agent: socksAgent },
             (res) => {
               const chunks: Buffer[] = [];
               res.on("data", (chunk) => chunks.push(chunk));
               res.on("end", () => {
                 const buffer = Buffer.concat(chunks);
-                const response = new Response(buffer, {
-                  status: res.statusCode || 200,
-                  statusText: res.statusMessage || "",
-                  headers: res.headers as Record<string, string>,
-                });
-                resolve(response);
+                resolve(
+                  new Response(buffer, {
+                    status: res.statusCode || 200,
+                    statusText: res.statusMessage || "",
+                    headers: res.headers as Record<string, string>,
+                  })
+                );
               });
             }
           );
@@ -59,24 +73,20 @@ export function getProxyFetch(): typeof globalThis.fetch {
           req.on("error", reject);
 
           if (body) {
-            if (typeof body === "string") {
-              req.write(body);
-            } else if (Buffer.isBuffer(body)) {
-              req.write(body);
-            }
+            if (typeof body === "string") req.write(body);
+            else if (Buffer.isBuffer(body)) req.write(body);
           }
           req.end();
         });
       }) as typeof globalThis.fetch;
     } else {
-      // HTTP(S) proxy — use undici ProxyAgent
       const agent = new ProxyAgent(proxyUrl);
       proxyFetch = ((input: any, init?: any) =>
         globalThis.fetch(input, {
           ...init,
           headers: {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            ...(init?.headers || {}),
+            "User-Agent": BROWSER_UA,
+            ...toPlainHeaders(init?.headers),
           },
           // @ts-expect-error Node.js fetch supports dispatcher via undici
           dispatcher: agent,
