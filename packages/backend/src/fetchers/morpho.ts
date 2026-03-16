@@ -1,8 +1,8 @@
 import { gql, GraphQLClient } from "graphql-request";
 import type { Market, PairConfig } from "@looping-tool/shared";
+import { getProxyFetch } from "../proxy.js";
 
 const MORPHO_API = "https://api.morpho.org/graphql";
-const client = new GraphQLClient(MORPHO_API);
 
 const MARKETS_QUERY = gql`
   query GetMarkets($marketIds: [String!]!) {
@@ -88,6 +88,7 @@ export async function fetchMorphoMarkets(
   const marketIds = morphoPairs.map((p) => p.marketId!);
 
   try {
+    const client = new GraphQLClient(MORPHO_API, { fetch: getProxyFetch() });
     const data = await client.request<{
       markets: { items: MorphoApiMarket[] };
     }>(MARKETS_QUERY, { marketIds });

@@ -2,6 +2,7 @@ import { createPublicClient, http, parseAbi } from "viem";
 import { mainnet } from "viem/chains";
 import { GraphQLClient, gql } from "graphql-request";
 import vaultsConfig from "../config/vaults.json" with { type: "json" };
+import { getProxyFetch } from "../proxy.js";
 
 const MORPHO_API = "https://api.morpho.org/graphql";
 
@@ -47,7 +48,7 @@ async function fetchYieldFromMorphoApi(
   if (addresses.length === 0) return rates;
 
   try {
-    const client = new GraphQLClient(MORPHO_API);
+    const client = new GraphQLClient(MORPHO_API, { fetch: getProxyFetch() });
     const query = gql`
       query GetAssets($addresses: [String!]!) {
         assets(where: { address_in: $addresses, chainId_in: [1] }) {
@@ -104,7 +105,7 @@ async function fetchYieldFromRpc(
   try {
     const client = createPublicClient({
       chain: mainnet,
-      transport: http(rpcUrl),
+      transport: http(rpcUrl, { fetch: getProxyFetch() }),
     });
 
     const decimals = await client.readContract({
