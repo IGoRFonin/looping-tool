@@ -7,6 +7,8 @@ interface FiltersBarProps {
   onRefresh: () => void;
   lastUpdated: string;
   loading: boolean;
+  depositAmount: number;
+  onDepositAmountChange: (amount: number) => void;
 }
 
 /** A number input that lets you type freely and only commits on blur. */
@@ -52,6 +54,8 @@ export function FiltersBar({
   onRefresh,
   lastUpdated,
   loading,
+  depositAmount,
+  onDepositAmountChange,
 }: FiltersBarProps) {
   const totalFees = filters.priceImpact + filters.flashloanFee + filters.serviceFee;
 
@@ -69,6 +73,24 @@ export function FiltersBar({
 
   return (
     <div className="flex flex-wrap items-end gap-4 p-5 bg-surface border border-border rounded-xl shadow-lg shadow-black/5 mb-6 transition-colors duration-300">
+      <div className="min-w-[6rem]">
+        <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">
+          Сумма входа
+        </label>
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-text-secondary">$</span>
+          <input
+            type="number"
+            min="1"
+            className={inputClasses}
+            value={depositAmount}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              if (val > 0) onDepositAmountChange(val);
+            }}
+          />
+        </div>
+      </div>
       <div className="min-w-[10rem]">
         <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">
           Target LTV %

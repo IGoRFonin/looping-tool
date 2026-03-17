@@ -51,6 +51,7 @@ function ThemeToggle() {
 function App() {
   const { data, loading, refresh } = useMarkets();
   const [filters, setFilters] = useState<FilterParams>(DEFAULT_FILTERS);
+  const [depositAmount, setDepositAmount] = useState(5000);
 
   const isFresh =
     data.lastUpdated &&
@@ -87,9 +88,11 @@ function App() {
           onRefresh={refresh}
           lastUpdated={data.lastUpdated}
           loading={loading}
+          depositAmount={depositAmount}
+          onDepositAmountChange={setDepositAmount}
         />
 
-        <MarketsTable markets={data.markets} filters={filters} />
+        <MarketsTable markets={data.markets} filters={filters} depositAmount={depositAmount} />
       </div>
     </div>
   );
