@@ -18,10 +18,12 @@ const MARKETS_QUERY = gql`
         collateralAsset {
           symbol
           address
+          decimals
         }
         loanAsset {
           symbol
           address
+          decimals
         }
         state {
           borrowApy
@@ -37,8 +39,8 @@ const MARKETS_QUERY = gql`
 interface MorphoApiMarket {
   uniqueKey: string;
   lltv: string;
-  collateralAsset: { symbol: string; address: string };
-  loanAsset: { symbol: string; address: string };
+  collateralAsset: { symbol: string; address: string; decimals: number };
+  loanAsset: { symbol: string; address: string; decimals: number };
   state: {
     borrowApy: number;
     supplyApy: number;
@@ -64,10 +66,12 @@ export function transformMorphoMarket(
     collateralAsset: {
       symbol: apiMarket.collateralAsset.symbol,
       address: apiMarket.collateralAsset.address,
+      decimals: apiMarket.collateralAsset.decimals,
     },
     borrowAsset: {
       symbol: apiMarket.loanAsset.symbol,
       address: apiMarket.loanAsset.address,
+      decimals: apiMarket.loanAsset.decimals,
     },
     collateralAPY,
     borrowAPY: apiMarket.state.borrowApy,

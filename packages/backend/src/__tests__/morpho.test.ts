@@ -6,8 +6,8 @@ describe("transformMorphoMarket", () => {
     const apiMarket = {
       uniqueKey: "0x3274643db77a064abd3bc851de77556a4ad2e2f502f4f0c80845fa8f909ecf0b",
       lltv: "965000000000000000", // 0.965 in 18-decimal WAD
-      collateralAsset: { symbol: "sUSDS", address: "0xaaa" },
-      loanAsset: { symbol: "USDT", address: "0xbbb" },
+      collateralAsset: { symbol: "sUSDS", address: "0xaaa", decimals: 18 },
+      loanAsset: { symbol: "USDT", address: "0xbbb", decimals: 6 },
       state: {
         borrowApy: 0.0316,
         supplyApy: 0.01,
@@ -35,8 +35,8 @@ describe("transformMorphoMarket", () => {
     const apiMarket = {
       uniqueKey: "0xabc",
       lltv: "900000000000000000",
-      collateralAsset: { symbol: "sUSDe", address: "0xccc" },
-      loanAsset: { symbol: "USDC", address: "0xddd" },
+      collateralAsset: { symbol: "sUSDe", address: "0xccc", decimals: 18 },
+      loanAsset: { symbol: "USDC", address: "0xddd", decimals: 6 },
       state: {
         borrowApy: 0.02,
         supplyApy: 0.005,
