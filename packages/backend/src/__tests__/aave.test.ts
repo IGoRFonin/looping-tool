@@ -21,6 +21,7 @@ describe("transformAaveReserve", () => {
     const collateralReserve = {
       symbol: "sUSDe",
       underlyingAsset: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
+      decimals: 18n,
       baseLTVasCollateral: 9000n, // 90%
       reserveLiquidationThreshold: 9200n, // 92%
       eModeLtv: 0,
@@ -58,6 +59,7 @@ describe("transformAaveReserve", () => {
     const collateralReserve = {
       symbol: "sUSDe",
       underlyingAsset: "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497",
+      decimals: 18n,
       baseLTVasCollateral: 0n,
       reserveLiquidationThreshold: 7500n, // 75%
       eModeLtv: 9000, // 90%

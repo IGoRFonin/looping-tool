@@ -107,7 +107,7 @@ interface AaveReserve {
  * - availableLiquidity is in the borrow asset's native decimals.
  */
 export function transformAaveReserve(
-  collateralReserve: Pick<AaveReserve, "symbol" | "underlyingAsset" | "baseLTVasCollateral" | "reserveLiquidationThreshold" | "eModeLtv" | "eModeLiquidationThreshold">,
+  collateralReserve: Pick<AaveReserve, "symbol" | "underlyingAsset" | "decimals" | "baseLTVasCollateral" | "reserveLiquidationThreshold" | "eModeLtv" | "eModeLiquidationThreshold">,
   borrowReserve: AaveReserve,
   collateralAPY: number | null
 ): Market {
@@ -147,10 +147,12 @@ export function transformAaveReserve(
     collateralAsset: {
       symbol: collateralReserve.symbol,
       address: collateralReserve.underlyingAsset,
+      decimals: Number(collateralReserve.decimals),
     },
     borrowAsset: {
       symbol: borrowReserve.symbol,
       address: borrowReserve.underlyingAsset,
+      decimals: Number(borrowReserve.decimals),
     },
     collateralAPY,
     borrowAPY,

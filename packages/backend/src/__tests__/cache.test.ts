@@ -5,8 +5,8 @@ import type { Market } from "@looping-tool/shared";
 const mockMarket: Market = {
   protocol: "morpho",
   network: "ethereum",
-  collateralAsset: { symbol: "sUSDS", address: "0xaaa" },
-  borrowAsset: { symbol: "USDT", address: "0xbbb" },
+  collateralAsset: { symbol: "sUSDS", address: "0xaaa", decimals: 18 },
+  borrowAsset: { symbol: "USDT", address: "0xbbb", decimals: 6 },
   collateralAPY: 0.04,
   borrowAPY: 0.0316,
   maxLTV: 0.965,
