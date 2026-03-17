@@ -8,6 +8,7 @@ dotenv.config({ path: resolve(__dirname, "../../../.env") });
 import express from "express";
 import cors from "cors";
 import { marketsRouter, cache } from "./routes/markets.js";
+import { priceImpactRouter } from "./routes/price-impact.js";
 import { fetchAllMarkets } from "./fetchers/index.js";
 
 const app = express();
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use("/api", marketsRouter);
+app.use("/api", priceImpactRouter);
 
 // In production, serve frontend static files
 const frontendDist = resolve(__dirname, "../../../packages/frontend/dist");
