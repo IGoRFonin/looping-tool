@@ -7,20 +7,20 @@
 - **Фронтенд:** React 19, Vite, Tailwind CSS, TanStack Table
 - **Бэкенд:** Express, tsx
 - **Shared:** общие TypeScript типы
-- **Монорепо:** Yarn Workspaces
+- **Монорепо:** npm Workspaces
 
 ## Запуск в dev-режиме
 
 ```bash
 # Установить зависимости
-yarn install
+npm install
 
 # Создать .env в корне проекта и заполнить RPC_URL
 cp .env.example .env
 
 # Запустить (два терминала)
-yarn workspace @looping-tool/backend run dev
-yarn workspace @looping-tool/frontend run dev
+npm run dev --workspace=@looping-tool/backend
+npm run dev --workspace=@looping-tool/frontend
 ```
 
 ## Переменные окружения
