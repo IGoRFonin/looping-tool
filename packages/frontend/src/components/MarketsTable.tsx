@@ -6,9 +6,13 @@ import {
   createColumnHelper,
   type SortingState,
 } from "@tanstack/react-table";
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, Fragment } from "react";
 import type { Market, FilterParams } from "@looping-tool/shared";
 import { computeMetrics } from "../lib/calculator";
+import { usePriceImpact } from "../hooks/usePriceImpact";
+import { PriceImpactDetails } from "./PriceImpactDetails";
+import { ColumnVisibility } from "./ColumnVisibility";
+import { useColumnVisibility } from "../hooks/useColumnVisibility";
 
 interface MarketRow extends Market {
   effectiveLTV: number;
@@ -103,94 +107,38 @@ function TierCell({ value, tier }: { value: string; tier: Tier }) {
   );
 }
 
-const columnHelper = createColumnHelper<MarketRow>();
+function getRowKey(market: Market): string {
+  if (market.protocol === "morpho" && market.marketId) {
+    return `${market.protocol}:${market.marketId}`;
+  }
+  return `${market.protocol}:${market.collateralAsset.address}:${market.borrowAsset.address}`;
+}
 
-const columns = [
-  columnHelper.accessor("network", { header: "Network", cell: () => "Ethereum" }),
-  columnHelper.accessor("protocol", {
-    header: "Protocol",
-    cell: (info) => info.getValue() === "morpho" ? "Morpho" : "Aave",
-  }),
-  columnHelper.accessor("collateralAsset", {
-    header: "Collateral",
-    cell: (info) => info.getValue().symbol,
-    sortingFn: (a, b) =>
-      a.original.collateralAsset.symbol.localeCompare(b.original.collateralAsset.symbol),
-  }),
-  columnHelper.accessor("borrowAsset", {
-    header: "Borrow",
-    cell: (info) => info.getValue().symbol,
-    sortingFn: (a, b) =>
-      a.original.borrowAsset.symbol.localeCompare(b.original.borrowAsset.symbol),
-  }),
-  columnHelper.accessor("collateralAPY", {
-    header: "Collateral APY",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("borrowAPY", {
-    header: "Borrow APY",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("availableLiquidity", {
-    header: "Avail. Liquidity",
-    cell: (info) => <span className="font-mono">{usd(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("utilization", {
-    header: "Utilization",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("maxLTV", {
-    header: "Max LTV",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("liqThreshold", {
-    header: "Liq. Threshold",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("liqBuffer", {
-    header: "Liq. Buffer",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
-  }),
-  columnHelper.accessor("leverage", {
-    header: "Leverage",
-    cell: (info) => <span className="font-mono">{info.getValue().toFixed(2)}x</span>,
-  }),
-  columnHelper.accessor("netAPY", {
-    header: "Net APY",
-    cell: (info) => {
-      const v = info.getValue();
-      const tier = getNetAPYTier(v);
-      return <TierCell value={v === null ? "N/A" : pct(v)} tier={tier} />;
-    },
-  }),
-  columnHelper.accessor("entryCost", {
-    header: "Entry Cost",
-    cell: (info) => {
-      const v = info.getValue();
-      const tier = getEntryCostTier(v);
-      return <TierCell value={pct(v)} tier={tier} />;
-    },
-  }),
-  columnHelper.accessor("breakEvenDays", {
-    header: "Break-Even",
-    cell: (info) => {
-      const v = info.getValue();
-      const tier = getBreakEvenTier(v);
-      const display = v === null ? "N/A" : `${v.toFixed(1)} days`;
-      return <TierCell value={display} tier={tier} />;
-    },
-  }),
-];
+const columnHelper = createColumnHelper<MarketRow>();
 
 interface MarketsTableProps {
   markets: Market[];
   filters: FilterParams;
+  depositAmount: number;
 }
 
-export function MarketsTable({ markets, filters }: MarketsTableProps) {
+export function MarketsTable({ markets, filters, depositAmount }: MarketsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "netAPY", desc: true },
   ]);
+
+  const { fetchPriceImpact, resetAll, getState } = usePriceImpact();
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Reset price impact data when deposit amount changes
+  const prevDepositRef = useRef(depositAmount);
+  useEffect(() => {
+    if (prevDepositRef.current !== depositAmount) {
+      resetAll();
+      setExpandedRows(new Set());
+      prevDepositRef.current = depositAmount;
+    }
+  }, [depositAmount, resetAll]);
 
   const rows: MarketRow[] = useMemo(
     () =>
@@ -201,17 +149,178 @@ export function MarketsTable({ markets, filters }: MarketsTableProps) {
     [markets, filters]
   );
 
+  const columns = useMemo(() => [
+    columnHelper.accessor("network", { id: "network", header: "Network", cell: () => "Ethereum" }),
+    columnHelper.accessor("protocol", {
+      id: "protocol",
+      header: "Protocol",
+      cell: (info) => info.getValue() === "morpho" ? "Morpho" : "Aave",
+    }),
+    columnHelper.accessor("collateralAsset", {
+      id: "collateralAsset",
+      header: "Collateral",
+      cell: (info) => info.getValue().symbol,
+      sortingFn: (a, b) =>
+        a.original.collateralAsset.symbol.localeCompare(b.original.collateralAsset.symbol),
+    }),
+    columnHelper.accessor("borrowAsset", {
+      id: "borrowAsset",
+      header: "Borrow",
+      cell: (info) => info.getValue().symbol,
+      sortingFn: (a, b) =>
+        a.original.borrowAsset.symbol.localeCompare(b.original.borrowAsset.symbol),
+    }),
+    columnHelper.accessor("collateralAPY", {
+      id: "collateralAPY",
+      header: "Collateral APY",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("borrowAPY", {
+      id: "borrowAPY",
+      header: "Borrow APY",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("availableLiquidity", {
+      id: "availableLiquidity",
+      header: "Avail. Liquidity",
+      cell: (info) => <span className="font-mono">{usd(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("utilization", {
+      id: "utilization",
+      header: "Utilization",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("maxLTV", {
+      id: "maxLTV",
+      header: "Max LTV",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("liqThreshold", {
+      id: "liqThreshold",
+      header: "Liq. Threshold",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.accessor("liqBuffer", {
+      id: "liqBuffer",
+      header: "Liq. Buffer",
+      cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    }),
+    columnHelper.display({
+      id: "priceImpact",
+      header: "Price Impact",
+      cell: ({ row }) => {
+        const market = row.original;
+        const piState = getState(market);
+        const rowKey = getRowKey(market);
+
+        if (piState.loading) {
+          return <span className="animate-spin inline-block">&#x23F3;</span>;
+        }
+        if (piState.error) {
+          return (
+            <button
+              onClick={() => fetchPriceImpact(market, depositAmount, market.leverage)}
+              className="text-red-400 hover:text-red-300"
+              title={piState.error}
+            >
+              &#x21BB;
+            </button>
+          );
+        }
+        if (piState.data) {
+          return (
+            <button
+              onClick={() => {
+                setExpandedRows((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(rowKey)) next.delete(rowKey);
+                  else next.add(rowKey);
+                  return next;
+                });
+              }}
+              className="text-accent hover:underline font-mono"
+            >
+              {(piState.data.priceImpact * 100).toFixed(2)}%
+            </button>
+          );
+        }
+        return (
+          <button
+            onClick={() => fetchPriceImpact(market, depositAmount, market.leverage)}
+            className="text-text-secondary hover:text-text-primary"
+            title="Узнать price impact"
+          >
+            &#x1F4CA;
+          </button>
+        );
+      },
+    }),
+    columnHelper.accessor("leverage", {
+      id: "leverage",
+      header: "Leverage",
+      cell: (info) => <span className="font-mono">{info.getValue().toFixed(2)}x</span>,
+    }),
+    columnHelper.accessor("netAPY", {
+      id: "netAPY",
+      header: "Net APY",
+      cell: (info) => {
+        const v = info.getValue();
+        const tier = getNetAPYTier(v);
+        return <TierCell value={v === null ? "N/A" : pct(v)} tier={tier} />;
+      },
+    }),
+    columnHelper.accessor("entryCost", {
+      id: "entryCost",
+      header: "Entry Cost",
+      cell: (info) => {
+        const v = info.getValue();
+        const tier = getEntryCostTier(v);
+        return <TierCell value={pct(v)} tier={tier} />;
+      },
+    }),
+    columnHelper.accessor("breakEvenDays", {
+      id: "breakEvenDays",
+      header: "Break-Even",
+      cell: (info) => {
+        const v = info.getValue();
+        const tier = getBreakEvenTier(v);
+        const display = v === null ? "N/A" : `${v.toFixed(1)} days`;
+        return <TierCell value={display} tier={tier} />;
+      },
+    }),
+  ], [getState, fetchPriceImpact, depositAmount]);
+
+  const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
+  const [columnVisibility, setColumnVisibility] = useColumnVisibility(columnIds);
+
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting },
+    state: {
+      sorting,
+      columnVisibility,
+    },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: (updater) => {
+      const next = typeof updater === "function" ? updater(columnVisibility) : updater;
+      setColumnVisibility(next);
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-lg shadow-black/5 overflow-hidden transition-colors duration-300">
+      <div className="flex justify-end p-2">
+        <ColumnVisibility
+          columns={columnIds.map((id) => ({
+            id,
+            label: (table.getColumn(id)?.columnDef.header as string) ?? id,
+          }))}
+          visibility={columnVisibility}
+          onChange={setColumnVisibility}
+        />
+      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -231,23 +340,40 @@ export function MarketsTable({ markets, filters }: MarketsTableProps) {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row, i) => (
-              <tr
-                key={row.id}
-                className={`border-b border-border/50 hover:bg-row-hover transition-colors duration-150 ${
-                  i % 2 === 1 ? "bg-row-alt" : ""
-                }`}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="px-3 py-2 whitespace-nowrap text-text-primary"
+            {table.getRowModel().rows.map((row, i) => {
+              const rowKey = getRowKey(row.original);
+              const piState = getState(row.original);
+              return (
+                <Fragment key={row.id}>
+                  <tr
+                    className={`border-b border-border/50 hover:bg-row-hover transition-colors duration-150 ${
+                      i % 2 === 1 ? "bg-row-alt" : ""
+                    }`}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-3 py-2 whitespace-nowrap text-text-primary"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                  {expandedRows.has(rowKey) && piState.data && (
+                    <tr>
+                      <td colSpan={row.getVisibleCells().length}>
+                        <PriceImpactDetails
+                          market={row.original}
+                          filters={filters}
+                          data={piState.data}
+                          defaultMetrics={computeMetrics(row.original, filters)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

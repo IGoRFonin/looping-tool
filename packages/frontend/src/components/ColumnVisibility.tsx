@@ -1,30 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 
-const STORAGE_KEY = "looping-tool-column-visibility";
-
 interface Props {
   columns: { id: string; label: string }[];
   visibility: Record<string, boolean>;
   onChange: (visibility: Record<string, boolean>) => void;
-}
-
-export function useColumnVisibility(
-  columnIds: string[]
-): [Record<string, boolean>, (v: Record<string, boolean>) => void] {
-  const [visibility, setVisibility] = useState<Record<string, boolean>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return Object.fromEntries(columnIds.map((id) => [id, true]));
-  });
-
-  const save = (v: Record<string, boolean>) => {
-    setVisibility(v);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(v));
-  };
-
-  return [visibility, save];
 }
 
 export function ColumnVisibility({ columns, visibility, onChange }: Props) {
