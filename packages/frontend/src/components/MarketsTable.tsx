@@ -142,11 +142,17 @@ export function MarketsTable({ markets, filters, depositAmount }: MarketsTablePr
 
   const rows: MarketRow[] = useMemo(
     () =>
-      markets.map((m) => ({
-        ...m,
-        ...computeMetrics(m, filters),
-      })),
-    [markets, filters]
+      markets.map((m) => {
+        const piState = getState(m);
+        const effectiveFilters = piState.data
+          ? { ...filters, priceImpact: piState.data.priceImpact }
+          : filters;
+        return {
+          ...m,
+          ...computeMetrics(m, effectiveFilters),
+        };
+      }),
+    [markets, filters, getState]
   );
 
   const columns = useMemo(() => [
@@ -220,7 +226,7 @@ export function MarketsTable({ markets, filters, depositAmount }: MarketsTablePr
           return (
             <button
               onClick={() => fetchPriceImpact(market, depositAmount, market.leverage)}
-              className="text-red-400 hover:text-red-300"
+              className="text-red-400 hover:text-red-300 cursor-pointer"
               title={piState.error}
             >
               &#x21BB;
@@ -238,7 +244,7 @@ export function MarketsTable({ markets, filters, depositAmount }: MarketsTablePr
                   return next;
                 });
               }}
-              className="text-accent hover:underline font-mono"
+              className="text-accent hover:underline font-mono cursor-pointer"
             >
               {(piState.data.priceImpact * 100).toFixed(2)}%
             </button>
@@ -247,7 +253,7 @@ export function MarketsTable({ markets, filters, depositAmount }: MarketsTablePr
         return (
           <button
             onClick={() => fetchPriceImpact(market, depositAmount, market.leverage)}
-            className="text-text-secondary hover:text-text-primary"
+            className="text-text-secondary hover:text-text-primary cursor-pointer"
             title="Узнать price impact"
           >
             &#x1F4CA;
