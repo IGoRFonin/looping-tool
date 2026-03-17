@@ -58,7 +58,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-bg transition-colors duration-300">
-      <div className="max-w-[1600px] mx-auto px-6 py-6">
+      <div className="max-w-[1800px] mx-auto px-6 py-6">
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
