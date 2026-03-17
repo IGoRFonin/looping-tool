@@ -16,6 +16,14 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use("/api", marketsRouter);
 
+// In production, serve frontend static files
+const frontendDist = resolve(__dirname, "../../../packages/frontend/dist");
+app.use(express.static(frontendDist));
+// SPA fallback — all non-API requests serve index.html
+app.get("*", (_req, res) => {
+  res.sendFile(resolve(frontendDist, "index.html"));
+});
+
 // Fetch data on startup
 async function init() {
   console.log("Fetching initial market data...");

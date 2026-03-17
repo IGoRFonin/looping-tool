@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -23,6 +23,12 @@
   --color-warning-bg: var(--theme-warning-bg);
   --color-warning-border: var(--theme-warning-border);
   --color-warning-text: var(--theme-warning-text);
+
+  --color-tier-excellent: var(--theme-tier-excellent);
+  --color-tier-good: var(--theme-tier-good);
+  --color-tier-ok: var(--theme-tier-ok);
+  --color-tier-risky: var(--theme-tier-risky);
+  --color-tier-bad: var(--theme-tier-bad);
 }
 
 /* Dark theme (default) */
@@ -45,6 +51,12 @@
   --theme-warning-bg: rgba(234, 179, 8, 0.1);
   --theme-warning-border: rgba(234, 179, 8, 0.3);
   --theme-warning-text: #fbbf24;
+
+  --theme-tier-excellent: #22c55e;
+  --theme-tier-good: #4ade80;
+  --theme-tier-ok: #facc15;
+  --theme-tier-risky: #f97316;
+  --theme-tier-bad: #ef4444;
 }
 
 /* Light theme */
@@ -67,6 +79,12 @@
   --theme-warning-bg: #fefce8;
   --theme-warning-border: #fde68a;
   --theme-warning-text: #92400e;
+
+  --theme-tier-excellent: #16a34a;
+  --theme-tier-good: #22c55e;
+  --theme-tier-ok: #ca8a04;
+  --theme-tier-risky: #ea580c;
+  --theme-tier-bad: #dc2626;
 }
 
 body {
@@ -84,4 +102,35 @@ body {
 
 .animate-pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Tier tooltip */
+.tier-cell {
+  position: relative;
+  cursor: default;
+}
+
+.tier-cell .tier-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: fixed;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.tier-cell:hover .tier-tooltip {
+  visibility: visible;
+  opacity: 1;
 }

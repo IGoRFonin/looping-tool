@@ -21,7 +21,7 @@ function PctInput({
   className?: string;
   onCommit: (v: string) => void;
 }) {
-  const display = value !== null ? String(value * 100) : "";
+  const display = value !== null ? String(Math.round(value * 1e6) / 1e4) : "";
   const [text, setText] = useState(display);
   const [focused, setFocused] = useState(false);
 

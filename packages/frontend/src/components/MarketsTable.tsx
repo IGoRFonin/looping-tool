@@ -6,7 +6,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from "@tanstack/react-table";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import type { Market, FilterParams } from "@looping-tool/shared";
 import { computeMetrics } from "../lib/calculator";
 
@@ -28,6 +28,80 @@ const usd = (v: number) => {
   if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toFixed(0)}`;
 };
+
+interface Tier {
+  color: string;
+  label: string;
+  tip: string;
+}
+
+function getBreakEvenTier(days: number | null): Tier {
+  if (days === null) return { color: "var(--theme-text-secondary)", label: "N/A", tip: "Net APY <= 0, окупаемость невозможна" };
+  if (days <= 3) return { color: "var(--theme-tier-excellent)", label: "< 3d", tip: "Быстрый payback, входить смело" };
+  if (days <= 7) return { color: "var(--theme-tier-good)", label: "3-7d", tip: "Норм если рейты стабильны" };
+  if (days <= 14) return { color: "var(--theme-tier-ok)", label: "7-14d", tip: "Рейты могут сдвинуться" };
+  if (days <= 30) return { color: "var(--theme-tier-risky)", label: "14-30d", tip: "Долгий payback, рейт-риск" };
+  return { color: "var(--theme-tier-bad)", label: "> 30d", tip: "Entry cost скорее всего не отобьётся" };
+}
+
+function getNetAPYTier(apy: number | null): Tier {
+  if (apy === null) return { color: "var(--theme-text-secondary)", label: "N/A", tip: "Невозможно рассчитать" };
+  if (apy <= 0) return { color: "var(--theme-tier-bad)", label: "Neg", tip: "Отрицательная доходность, не входить" };
+  if (apy < 0.03) return { color: "var(--theme-tier-risky)", label: "< 3%", tip: "Слишком мало для лупинга" };
+  if (apy < 0.05) return { color: "var(--theme-tier-ok)", label: "3-5%", tip: "Слабый spread, высокий break-even" };
+  if (apy < 0.10) return { color: "var(--theme-tier-good)", label: "5-10%", tip: "Нормальная доходность" };
+  return { color: "var(--theme-tier-excellent)", label: "> 10%", tip: "Отличный spread, цель профи" };
+}
+
+function getEntryCostTier(cost: number): Tier {
+  if (cost <= 0.0005) return { color: "var(--theme-tier-excellent)", label: "< 0.05%", tip: "Минимальный входной friction" };
+  if (cost <= 0.001) return { color: "var(--theme-tier-good)", label: "0.05-0.1%", tip: "Приемлемо для крупных позиций" };
+  if (cost <= 0.003) return { color: "var(--theme-tier-ok)", label: "0.1-0.3%", tip: "Следи за break-even" };
+  if (cost <= 0.005) return { color: "var(--theme-tier-risky)", label: "0.3-0.5%", tip: "Только если spread > 5%" };
+  return { color: "var(--theme-tier-bad)", label: "> 0.5%", tip: "Slippage съест доход" };
+}
+
+function TierCell({ value, tier }: { value: string; tier: Tier }) {
+  const tipRef = useRef<HTMLSpanElement>(null);
+
+  const onEnter = useCallback((e: React.MouseEvent<HTMLSpanElement>) => {
+    const el = tipRef.current;
+    if (!el) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    el.style.top = `${rect.top - 8}px`;
+    el.style.transform = "translateY(-100%)";
+    el.style.left = "";
+    el.style.right = "";
+    // measure tooltip width
+    el.style.visibility = "hidden";
+    el.style.display = "block";
+    const tipW = el.offsetWidth;
+    el.style.display = "";
+    el.style.visibility = "";
+    // clamp to viewport
+    const margin = 8;
+    if (cx - tipW / 2 < margin) {
+      el.style.left = `${margin}px`;
+    } else if (cx + tipW / 2 > window.innerWidth - margin) {
+      el.style.right = `${margin}px`;
+    } else {
+      el.style.left = `${cx}px`;
+      el.style.transform = "translate(-50%, -100%)";
+    }
+  }, []);
+
+  return (
+    <span className="tier-cell font-mono" style={{ color: tier.color }} onMouseEnter={onEnter}>
+      {value}
+      <span ref={tipRef} className="tier-tooltip">
+        <span style={{ color: tier.color, fontWeight: 600 }}>{tier.label}</span>
+        {" : "}
+        {tier.tip}
+      </span>
+    </span>
+  );
+}
 
 const columnHelper = createColumnHelper<MarketRow>();
 
@@ -85,20 +159,25 @@ const columns = [
     header: "Net APY",
     cell: (info) => {
       const v = info.getValue();
-      if (v === null) return <span className="font-mono">N/A</span>;
-      const cls = v > 0 ? "text-positive font-semibold" : "text-negative";
-      return <span className={`font-mono ${cls}`}>{pct(v)}</span>;
+      const tier = getNetAPYTier(v);
+      return <TierCell value={v === null ? "N/A" : pct(v)} tier={tier} />;
     },
   }),
   columnHelper.accessor("entryCost", {
     header: "Entry Cost",
-    cell: (info) => <span className="font-mono">{pct(info.getValue())}</span>,
+    cell: (info) => {
+      const v = info.getValue();
+      const tier = getEntryCostTier(v);
+      return <TierCell value={pct(v)} tier={tier} />;
+    },
   }),
   columnHelper.accessor("breakEvenDays", {
     header: "Break-Even",
     cell: (info) => {
       const v = info.getValue();
-      return <span className="font-mono">{v === null ? "N/A" : `${v.toFixed(1)} days`}</span>;
+      const tier = getBreakEvenTier(v);
+      const display = v === null ? "N/A" : `${v.toFixed(1)} days`;
+      return <TierCell value={display} tier={tier} />;
     },
   }),
 ];

@@ -5,5 +5,8 @@
     "packages/shared",
     "packages/backend",
     "packages/frontend"
-  ]
+  ],
+  "dependencies": {
+    "@vitejs/plugin-react": "4"
+  }
 }
