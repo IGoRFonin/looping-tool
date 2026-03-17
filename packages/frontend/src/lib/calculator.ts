@@ -26,3 +26,15 @@ export function computeMetrics(
 
   return { effectiveLTV, leverage, netAPY, entryCost, breakEvenDays, liqBuffer };
 }
+
+/** Recompute metrics using a real price impact value instead of the filter default */
+export function computeMetricsWithRealImpact(
+  market: Market,
+  filters: FilterParams,
+  realPriceImpact: number
+): ComputedMetrics {
+  return computeMetrics(market, {
+    ...filters,
+    priceImpact: realPriceImpact,
+  });
+}
