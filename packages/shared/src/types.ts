@@ -2,6 +2,7 @@
 export interface Asset {
   symbol: string;
   address: string;
+  decimals: number;
 }
 
 /**
@@ -47,6 +48,15 @@ export interface FilterParams {
   flashloanFee: number;
   /** Service fee as decimal (default 0.0001 = 0.01%). */
   serviceFee: number;
+}
+
+/** Response from GET /api/price-impact */
+export interface PriceImpactResponse {
+  provider: string;
+  priceImpact: number;
+  outputAmount: string;
+  effectivePrice: number;
+  gasEstimateUsd: number;
 }
 
 /** Computed metrics for a single market row, calculated on the frontend */
