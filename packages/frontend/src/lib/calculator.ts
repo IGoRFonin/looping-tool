@@ -15,7 +15,7 @@ export function computeMetrics(
 
   const leverage = 1 / (1 - effectiveLTV);
   const entryCost = filters.priceImpact + filters.flashloanFee + filters.serviceFee;
-  const liqBuffer = market.liqThreshold - effectiveLTV;
+  const liqBuffer = 1 - effectiveLTV / market.liqThreshold;
 
   if (market.collateralAPY === null) {
     return { effectiveLTV, leverage, netAPY: null, entryCost, breakEvenDays: null, liqBuffer };

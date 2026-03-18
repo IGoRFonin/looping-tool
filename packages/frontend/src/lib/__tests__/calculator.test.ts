@@ -32,8 +32,8 @@ describe("computeMetrics", () => {
     expect(m.leverage).toBeCloseTo(11.76, 1);
     // netAPY = 0.04 * 11.76 - 0.0316 * 10.76 ≈ 0.4704 - 0.3400 ≈ 0.1304
     expect(m.netAPY).toBeCloseTo(0.1304, 2);
-    // liqBuffer = 0.965 - 0.915 = 0.05
-    expect(m.liqBuffer).toBeCloseTo(0.05, 3);
+    // liqBuffer = 1 - 0.915 / 0.965 ≈ 0.05181
+    expect(m.liqBuffer).toBeCloseTo(0.05181, 3);
     // entryCost = 0.0007 + 0.0009 + 0.0001 = 0.0017
     expect(m.entryCost).toBeCloseTo(0.0017, 4);
     // breakEvenDays = (0.0017 / 0.1304) * 365 ≈ 4.76
