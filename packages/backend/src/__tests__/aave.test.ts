@@ -14,8 +14,6 @@ describe("transformAaveReserve", () => {
       decimals: 6n,
       totalScaledVariableDebt: 0n,
       borrowingEnabled: true,
-      eModeLtv: 0,
-      eModeLiquidationThreshold: 0,
     };
 
     const collateralReserve = {
@@ -24,8 +22,6 @@ describe("transformAaveReserve", () => {
       decimals: 18n,
       baseLTVasCollateral: 9000n, // 90%
       reserveLiquidationThreshold: 9200n, // 92%
-      eModeLtv: 0,
-      eModeLiquidationThreshold: 0,
     };
 
     const result = transformAaveReserve(collateralReserve, reserve, 0.035);
@@ -51,8 +47,6 @@ describe("transformAaveReserve", () => {
       decimals: 6n,
       totalScaledVariableDebt: 0n,
       borrowingEnabled: true,
-      eModeLtv: 0,
-      eModeLiquidationThreshold: 0,
     };
 
     // sUSDe has 0% base LTV but 90% eMode LTV
@@ -62,11 +56,10 @@ describe("transformAaveReserve", () => {
       decimals: 18n,
       baseLTVasCollateral: 0n,
       reserveLiquidationThreshold: 7500n, // 75%
-      eModeLtv: 9000, // 90%
-      eModeLiquidationThreshold: 9300, // 93%
     };
 
-    const result = transformAaveReserve(collateralReserve, reserve, 0.034);
+    // eMode params passed directly (from Pool.getEModeCategoryCollateralConfig)
+    const result = transformAaveReserve(collateralReserve, reserve, 0.034, 9000, 9300);
 
     expect(result.maxLTV).toBeCloseTo(0.9);
     expect(result.liqThreshold).toBeCloseTo(0.93);
